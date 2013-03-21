@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<data>
+	<images loc="../asset/images/">
+		<image>1.jpg</image>
+		<image>2.jpg</image>
+	</images>
+	<audio loc=""/>
+  	<video loc=""/>
+</data>
