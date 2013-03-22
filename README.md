@@ -13,6 +13,11 @@ http://www.greensock.com/tweenmax/
 #load image from amazon
 http://onegiantmedia.com/cross-domain-policy-issues-with-flash-loading-remote-data-from-amazon-s3-cloud-storage
 
+http://stackoverflow.com/questions/14283094/loading-facebook-profile-image-with-bulk-loader
+
+#video player library
+https://github.com/gokercebeci/f4player
+http://codeknow.com/opensource/videoLoader/
 
 Project schedule and timeline:
 
@@ -24,6 +29,12 @@ Dave, this is done, the github url is - https://github.com/bzrga/3d_phone
 Setup project base
 Create flash project in Flash IDE and sync the workspace with github. Create base swc library to store visual assets. Create xml file which contain S3 image file path and audio/video file path. commit the basic project structure into github.
 Research and import third party source libraries for loader, tweener, video/audio class and etc
+
+What's Done
+Setup project base
+Create flash project in Flash Builder and synced the workspace with github. Create xml file which contain image file path and audio/video file path.  Add third party source libraries for Bulk loader and tweenmax.  Setup basic image loading from local folder.  Add simple mouse interaction on images.
+
+11-2:30
 
 3/22-3/23
 Dynamically load images from Amazon cloud server and place in flash

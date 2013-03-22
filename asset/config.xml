@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <data>
-	<images loc="../asset/images/">
-		<image>1.jpg</image>
-		<image>2.jpg</image>
-	</images>
+	<images loc="https://s3.amazonaws.com/fsharp/htc/Job_0" start="132" total="72" type=".jpg"/>
+	
+   <loadermax name="videoListLoader" maxconnections="1" prependurls="">
+         <videoloader name="videoID0" url="http://content.bitsontherun.com/videos/XtyoLQuV-RyDNOtym.mp4" height="406" width="720" scalemode="proportionalInside" centerregistration="true" alpha="0" autoplay="true"/> 
+    </loadermax> 
 	<audio loc=""/>
   	<video loc=""/>
 </data>

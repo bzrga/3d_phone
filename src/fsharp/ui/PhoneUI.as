@@ -6,6 +6,8 @@ package fsharp.ui {
 	public class PhoneUI extends Sprite {
 		private var imageList:Array;
 		private var i:Number;
+		private const imageWidth:Number = 823;
+		private const imageHeight:Number = 427;
 		
 		public function PhoneUI()
 		{
@@ -20,13 +22,15 @@ package fsharp.ui {
 				
 			}
 			
+			buttonMode = useHandCursor = true;
+		}
+		
+		public function initHitArea():void {
 			var square:Sprite = new Sprite();
 			addChild(square);
-			square.graphics.beginFill(0x0000FF,.3);
-			square.graphics.drawRect(0,0,200,400);
+			square.graphics.beginFill(0x0000FF,.2);
+			square.graphics.drawRect(0,0,imageWidth,imageHeight);
 			square.graphics.endFill();
-			
-			buttonMode = useHandCursor = true;
 		}
 		
 		public function showPhoneFrame(frameNum:Number):void {
