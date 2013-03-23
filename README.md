@@ -34,8 +34,6 @@ What's Done
 Setup project base
 Create flash project in Flash Builder and synced the workspace with github. Create xml file which contain image file path and audio/video file path.  Add third party source libraries for Bulk loader and tweenmax.  Setup basic image loading from local folder.  Add simple mouse interaction on images.
 
-11-2:30
-
 3/22-3/23
 Dynamically load images from Amazon cloud server and place in flash
 

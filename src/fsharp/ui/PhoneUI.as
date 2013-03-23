@@ -28,7 +28,7 @@ package fsharp.ui {
 		public function initHitArea():void {
 			var square:Sprite = new Sprite();
 			addChild(square);
-			square.graphics.beginFill(0x0000FF,.2);
+			square.graphics.beginFill(0x0000FF,0);
 			square.graphics.drawRect(0,0,imageWidth,imageHeight);
 			square.graphics.endFill();
 		}
