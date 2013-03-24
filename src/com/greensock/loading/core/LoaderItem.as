@@ -114,6 +114,7 @@ package com.greensock.loading.core {
 				var request:URLRequest = new URLRequest();
 				request.data = _request.data;
 				request.method = _request.method;
+				trace("_isLocal=" + _isLocal);
 				_setRequestURL(request, _url, (!_isLocal || _url.substr(0, 4) == "http") ? "gsCacheBusterID=" + (_cacheID++) + "&purpose=audit" : "");
 				_auditStream.load(request);  
 			}
@@ -153,6 +154,7 @@ package com.greensock.loading.core {
 						var request:URLRequest = new URLRequest();
 						request.data = _request.data;
 						request.method = _request.method;
+						trace("_isLocal=" + _isLocal);
 						_setRequestURL(request, _url, (!_isLocal || _url.substr(0, 4) == "http") ? "gsCacheBusterID=" + (_cacheID++) + "&purpose=audit" : "");
 						_auditStream.load(request);
 					}

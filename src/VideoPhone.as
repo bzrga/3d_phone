@@ -16,14 +16,18 @@ package
 	import flash.events.Event;
 	import flash.events.MouseEvent;
 	import flash.geom.Matrix;
+	import flash.geom.PerspectiveProjection;
+	import flash.geom.Point;
 	import flash.media.Video;
 	import flash.net.NetConnection;
 	import flash.net.NetStream;
 	import flash.net.URLRequest;
 	import flash.system.LoaderContext;
 	import flash.system.Security;
+	import flash.utils.*;
 	
 	import fsharp.ui.PhoneUI;
+	import fsharp.ui.TestSlider;
 
 	[SWF(width="900", height="500", backgroundColor="#ffffff", frameRate="30")]
 	
@@ -48,8 +52,12 @@ package
 		private var videoHolder:Sprite;
 		private var angle:Number = 0;
 		private var speed:Number = 5;
-
 		
+		private var sliderX:TestSlider;
+		private var sliderY:TestSlider;
+		private var sliderZ:TestSlider;
+		private var sliderFV:TestSlider;
+		private var sliderWidth:TestSlider;
 		var context1:LoaderContext = new LoaderContext();
 		var req:URLRequest = new URLRequest("http://graph.facebook.com/" + "" + "/picture?type=large");
 
@@ -69,7 +77,6 @@ package
 		}
 		
 		private function onXMLLoaded(event:LoaderEvent):void {
-			
 			var queue:LoaderMax = new LoaderMax({name:"mainQueue", onProgress:progressHandler, onComplete:onAllLoaded, onError:errorHandler});
 			
 			configXml = LoaderMax.getContent("configXML");
@@ -108,6 +115,7 @@ package
 			trace("xml failed to load");
 		}
 		private function onAllLoaded(e:LoaderEvent):void {
+
 			phoneHolder = new PhoneUI();
 			addChild(phoneHolder);
 			
@@ -119,11 +127,59 @@ package
 			phoneHolder.init(imageList);
 			phoneHolder.showPhoneFrame(currentPhoneFrame);
 			video = new Video();
-			video.width = 626;
+			video.width = 600;
 			video.height = 362;
 			videoHolder = new Sprite;
-			videoHolder.addChild(video);
+			
+			//videoHolder.addChild(video);
+			
+			var Type:Class = getDefinitionByName("container") as Class;
+			var myBox:MovieClip = new Type();
+			videoHolder.addChild(myBox);
+			videoHolder.x = 90+300;
+			videoHolder.y = 26+181;
 			phoneHolder.addChild(videoHolder);
+			
+			
+			sliderX = new TestSlider;
+			sliderX.init("Video Rotation X", 0 , 180);
+			sliderX.x = 20;
+			sliderX.y = 420;
+			addChild(sliderX);
+			
+			sliderY = new TestSlider;
+			sliderY.init("Video Rotation Y", 0 , 180);
+			sliderY.x = (20 + 100)*2;
+			sliderY.y = 420;
+			addChild(sliderY);
+
+			sliderZ = new TestSlider;
+			sliderZ.init("Video Rotation Z", 0 , 180);
+			sliderZ.x = (20 + 100)*3;
+			sliderZ.y = 420;
+			addChild(sliderZ);
+			
+			sliderFV = new TestSlider;
+			sliderFV.init("fieldOfView", 1, 179);
+			sliderFV.x = (20 + 100)*4;
+			sliderFV.y = 420;
+			sliderFV.updateSliderValue(55);
+			addChild(sliderFV);
+			/*
+			sliderWidth = new TestSlider;
+			sliderWidth.init("Width", 600 , 1000);
+			sliderWidth.x = (20 + 100)*5;
+			sliderWidth.y = 420;
+			addChild(sliderWidth);
+			sliderWidth.addEventListener(TestSlider.UPDATE_VIDEO_3D, updateVideoPerspective);
+			*/
+			sliderX.addEventListener(TestSlider.UPDATE_VIDEO_3D, updateVideoPerspective);
+			sliderY.addEventListener(TestSlider.UPDATE_VIDEO_3D, updateVideoPerspective);
+			sliderZ.addEventListener(TestSlider.UPDATE_VIDEO_3D, updateVideoPerspective);
+			sliderFV.addEventListener(TestSlider.UPDATE_VIDEO_3D, updateVideoPerspective);
+			
+			//root.transform.perspectiveProjection.projectionCenter = new Point(175, 175); 
+			
 			
 			var nc:NetConnection = new NetConnection();
 			nc.connect(null);
@@ -162,6 +218,17 @@ return;
 			*/
 		}
 		
+		private function updateVideoPerspective(e:Event) : void {
+			videoHolder.rotationX = sliderX.value;
+			videoHolder.rotationY = sliderY.value;
+			videoHolder.rotationZ = sliderZ.value;
+			//videoHolder.width = sliderWidth.value;
+			var pp:PerspectiveProjection=new PerspectiveProjection();
+			pp.fieldOfView=sliderFV.value;
+			//pp.projectionCenter=new Point(0,0);
+			videoHolder.transform.perspectiveProjection=pp;
+
+		}
 		private function showVideo(video:VideoLoader):void {
 			
 			phoneHolder.addEventListener(MouseEvent.MOUSE_DOWN, onPhoneOver);
@@ -188,10 +255,10 @@ return;
 			//video.width = item.width;
 			//video.height = item.height;
 			// Center video instance on Stage.
-			video.x = (stage.stageWidth - video.width) / 2;
-			video.y = (stage.stageHeight - video.height) / 2;
-			video.x = 100;
-			video.y = 20;
+			//video.x = (stage.stageWidth - video.width) / 2;
+			//video.y = (stage.stageHeight - video.height) / 2;
+			video.x = -video.width/2;
+			video.y = -video.height/2;
 		}
 		
 		private function ns_onCuePoint(item:Object):void {
@@ -235,7 +302,10 @@ return;
 		private function start3DRotate(speed):void
 		{
 			angle<360? angle+=speed : angle = 0;
+			if (angle < 0) angle = 180+angle;
+			if (angle > 180) angle-=180;
 			videoHolder.rotationY = angle;
+			sliderY.updateSliderValue(angle);
 		}
 
 	}
