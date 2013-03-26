@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <data>
-	<images loc="https://s3.amazonaws.com/fsharp/htc/Job_0" start="132" total="10" type=".jpg"/>
-	
+	<!-- images loc="https://s3.amazonaws.com/fsharp/htc/Job_0" start="132" total="72" type=".jpg"/-->
+	<images loc="../asset/images/HTC360_000" start="00" total="71" type=".png"/>
    <loadermax name="videoListLoader" maxconnections="1" prependurls="">
-         <videoloader name="videoID0" url="http://content.bitsontherun.com/videos/XtyoLQuV-RyDNOtym.mp4" height="406" width="720" scalemode="proportionalInside" centerregistration="true" alpha="0" autoplay="true"/> 
+         <videoloader width="514" height="290" videoX="388" videoY="231" name="videoID0" url="http://content.bitsontherun.com/videos/XtyoLQuV-RyDNOtym.mp4" centerregistration="true" alpha="0" autoplay="true"/> 
     </loadermax> 
 	<audio loc=""/>
-  	<video loc=""/>
 </data>

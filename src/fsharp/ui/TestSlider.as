@@ -22,7 +22,7 @@ package fsharp.ui
 			super();
 		}
 		
-		public function init(desc:String, min:Number, max:Number):void {
+		public function init(desc:String, min:Number, max:Number, step:Number = 1):void {
 			this.min = min;
 			this.max = max;
 			this.desc = desc;
@@ -34,8 +34,8 @@ package fsharp.ui
 			
 			sliderHoder = new Slider(); 
 			sliderHoder.width = 100; 
-			sliderHoder.snapInterval = 1; 
-			sliderHoder.tickInterval = 1; 
+			sliderHoder.snapInterval = step; 
+			sliderHoder.tickInterval = step; 
 			sliderHoder.maximum = max; 
 			sliderHoder.value = min; 
 			sliderHoder.move(0, 30); 
@@ -47,12 +47,13 @@ package fsharp.ui
 
 		}
 		
-public function updateSliderValue(value:Number) :void {
-	trace("updateSliderValue Y= " + value);
-	this.value = value;
-	sliderHoder.value = value;
-	sliderLabel.text = this.desc + " " + value; 
-}
+		public function updateSliderValue(value:Number) :void {
+			trace("updateSliderValue Y= " + value);
+			this.value = value;
+			sliderHoder.value = value;
+			sliderLabel.text = this.desc + " " + value; 
+		}
+		
 		private function changeHandler(event:SliderEvent):void { 
 			trace("changeHandler=" + event.value);
 			sliderLabel.text = this.desc + " " + event.value; 

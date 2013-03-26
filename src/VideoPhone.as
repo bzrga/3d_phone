@@ -24,12 +24,13 @@ package
 	import flash.net.URLRequest;
 	import flash.system.LoaderContext;
 	import flash.system.Security;
+	import flash.text.TextField;
 	import flash.utils.*;
 	
 	import fsharp.ui.PhoneUI;
 	import fsharp.ui.TestSlider;
 
-	[SWF(width="900", height="500", backgroundColor="#ffffff", frameRate="30")]
+	[SWF(width="800", height="500", backgroundColor="#ffffff", frameRate="30")]
 	
 	public class VideoPhone extends Sprite
 	{
@@ -46,8 +47,14 @@ package
 		//keeps track of the VideoLoader that is currently playing
 		private var _currentVideo:VideoLoader;
 		
-		private const imageWidth:Number = 823;
-		private const imageHeight:Number = 427;
+		private const imageWidth:Number = 800;
+		private const imageHeight:Number = 500;
+		private var videoWidth:Number;
+		private var videoHeight:Number;
+		
+		private var videoX:Number;
+		private var videoY:Number;
+		
 		private var video:Video;
 		private var videoHolder:Sprite;
 		private var angle:Number = 0;
@@ -57,7 +64,14 @@ package
 		private var sliderY:TestSlider;
 		private var sliderZ:TestSlider;
 		private var sliderFV:TestSlider;
+		private var sliderScale:TestSlider;
 		private var sliderWidth:TestSlider;
+		
+		private var rotationXLabel:TextField;
+		private var rotationYLabel:TextField;
+		private var phoneFrameLabel:TextField;
+		
+		private var ns:NetStream;
 		var context1:LoaderContext = new LoaderContext();
 		var req:URLRequest = new URLRequest("http://graph.facebook.com/" + "" + "/picture?type=large");
 
@@ -83,11 +97,15 @@ package
 			
 			videoPath = configXml.video.@loc;
 			audioPath = configXml.audio.@loc;
-			trace(configXml.images.@loc);
+			videoX = configXml..videoloader.@videoX;
+			videoY = configXml..videoloader.@videoY;
+			videoWidth = configXml..videoloader.@width;
+			videoHeight = configXml..videoloader.@height;
+
 			var totalImgNum:Number = Number(configXml.images.@total);
 			for (i = 0; i < totalImgNum; i++) {
 				//append the ImageLoader and several other loaders
-				queue.append( new ImageLoader(String(configXml.images.@loc) + (Number(configXml.images.@start) + i) + configXml.images.@type, {name:"image"+i, container:this, x:0, y:0, width:imageWidth, height:imageHeight, scaleMode:"proportionalInside", centerRegistration:false, noCache:false}) );
+				queue.append( new ImageLoader(String(configXml.images.@loc) + (Number(configXml.images.@start) + i) + configXml.images.@type, {name:"image"+i, container:this, x:0, y:0, width:imageWidth, height:imageHeight, scaleMode:"proportionalInside", centerRegistration:false, alpha:0, noCache:false}) );
 				
 			}
 			imageList = new Array(totalImgNum-1);
@@ -127,44 +145,71 @@ package
 			phoneHolder.init(imageList);
 			phoneHolder.showPhoneFrame(currentPhoneFrame);
 			video = new Video();
-			video.width = 600;
-			video.height = 362;
+			video.width = videoWidth;
+			video.height = videoHeight;
 			videoHolder = new Sprite;
 			
-			//videoHolder.addChild(video);
+			videoHolder.addChild(video);
 			
 			var Type:Class = getDefinitionByName("container") as Class;
 			var myBox:MovieClip = new Type();
-			videoHolder.addChild(myBox);
-			videoHolder.x = 90+300;
-			videoHolder.y = 26+181;
-			phoneHolder.addChild(videoHolder);
+			
+			myBox.x = videoHolder.x = videoX;
+			myBox.y = videoHolder.y = videoY;
+			//phoneHolder.addChild(videoHolder);
+			addChild(videoHolder);
+			
+			addChild(myBox);
+			
+			//rotationXLabel = createCustomTextField(0, 420, 200, 20);
+			//rotationYLabel = createCustomTextField(150, 420, 200, 20);
+			
+			phoneFrameLabel = createCustomTextField(300, 420, 200, 20);
+			
+			phoneFrameLabel.text = "Current phone frame index " + currentPhoneFrame;
+			
+			myBox.addEventListener(MouseEvent.CLICK, startRotate);
 			
 			
 			sliderX = new TestSlider;
-			sliderX.init("Video Rotation X", 0 , 180);
+			sliderX.init("Video Rotation X", 0 , 1080);
 			sliderX.x = 20;
 			sliderX.y = 420;
-			addChild(sliderX);
 			
 			sliderY = new TestSlider;
-			sliderY.init("Video Rotation Y", 0 , 180);
-			sliderY.x = (20 + 100)*2;
+			sliderY.init("Video Rotation Y", 0 , 1080);
+			sliderY.x = (40 + 100)*1;
 			sliderY.y = 420;
-			addChild(sliderY);
 
 			sliderZ = new TestSlider;
-			sliderZ.init("Video Rotation Z", 0 , 180);
-			sliderZ.x = (20 + 100)*3;
+			sliderZ.init("Video Rotation Z", 0 , 1080);
+			sliderZ.x = (40 + 100)*2;
 			sliderZ.y = 420;
-			addChild(sliderZ);
+
 			
 			sliderFV = new TestSlider;
 			sliderFV.init("fieldOfView", 1, 179);
-			sliderFV.x = (20 + 100)*4;
+			sliderFV.x = (40 + 100)*3;
 			sliderFV.y = 420;
 			sliderFV.updateSliderValue(55);
+			
+			sliderScale = new TestSlider;
+			sliderScale.init("Scale", 1, 1.2, .01);
+			sliderScale.x = (40 + 100)*4;
+			sliderScale.y = 420;
+			sliderScale.updateSliderValue(1);
+			addChild(sliderScale);
+			
+			addChild(sliderZ);
+
+		
+			addChild(sliderX);
+			
+			addChild(sliderY);
+			/**/
+			
 			addChild(sliderFV);
+			
 			/*
 			sliderWidth = new TestSlider;
 			sliderWidth.init("Width", 600 , 1000);
@@ -177,6 +222,7 @@ package
 			sliderY.addEventListener(TestSlider.UPDATE_VIDEO_3D, updateVideoPerspective);
 			sliderZ.addEventListener(TestSlider.UPDATE_VIDEO_3D, updateVideoPerspective);
 			sliderFV.addEventListener(TestSlider.UPDATE_VIDEO_3D, updateVideoPerspective);
+			sliderScale.addEventListener(TestSlider.UPDATE_VIDEO_3D, updateVideoPerspective);
 			
 			//root.transform.perspectiveProjection.projectionCenter = new Point(175, 175); 
 			
@@ -184,13 +230,15 @@ package
 			var nc:NetConnection = new NetConnection();
 			nc.connect(null);
 			
-			var ns:NetStream = new NetStream(nc);
+			ns = new NetStream(nc);
 			ns.client = {onMetaData:ns_onMetaData, onCuePoint:ns_onCuePoint};
 			
 			video.attachNetStream(ns);
 			ns.play("http://content.bitsontherun.com/videos/XtyoLQuV-RyDNOtym.mp4");
 			//videoHolder.transform.perspectiveProjection.fieldOfView=55;
 
+			
+			
 			phoneHolder.initHitArea();
 			
 			phoneHolder.addEventListener(MouseEvent.MOUSE_DOWN, onPhoneOver);
@@ -218,13 +266,72 @@ return;
 			*/
 		}
 		
-		private function updateVideoPerspective(e:Event) : void {
-			videoHolder.rotationX = sliderX.value;
-			videoHolder.rotationY = sliderY.value;
-			videoHolder.rotationZ = sliderZ.value;
+		private function createCustomTextField(x:Number, y:Number, width:Number, height:Number):TextField {
+			var result:TextField = new TextField();
+			result.x = x; result.y = y;
+			result.width = width; result.height = height;
+			addChild(result);
+			return result;
+		}
+		private var rotateFlag = false;
+		private function startRotate(e:MouseEvent) : void {
+			trace("startRotate=" + rotateFlag);
+			if (rotateFlag) {
+				e.target.removeEventListener(MouseEvent.MOUSE_MOVE, moveMouseRotation);
+				e.target.removeEventListener(MouseEvent.MOUSE_WHEEL, mouseWheelRotation);
+				ns.pause();
+			} else {
+				e.target.addEventListener(MouseEvent.MOUSE_MOVE, moveMouseRotation);
+				e.target.addEventListener(MouseEvent.MOUSE_WHEEL, mouseWheelRotation);
+				ns.pause();
+			}
+			rotateFlag = !rotateFlag;
+		}
+		private function moveMouseRotation(e:MouseEvent) : void {
+			videoHolder.rotationX= stage.mouseY;
+			videoHolder.rotationY= stage.mouseX;
+			/*rotationXLabel.text = "rotationX " + videoHolder.rotationX; 
+				rotationYLabel.text ="rotationY " + videoHolder.rotationY;
+			*/	
+				sliderX.updateSliderValue(videoHolder.rotationX);
+				sliderY.updateSliderValue(videoHolder.rotationY);
+		}
+		
+		private function mouseWheelRotation(e:MouseEvent) {
+			//videoHolder.rotationY= stage.mouseX;
+		}
+		
+		
+		private function updateVideoPerspective(e:Event=null) : void {
+			var rotationObj = {};
+			
+			if (currentPhoneFrame == 4 && e == null) {
+				rotationObj.rotationX = 360;
+				rotationObj.rotationY = 565;
+				rotationObj.rotationZ = 360;
+				rotationObj.scale = 1.05;
+				rotationObj.fv = 1;	
+				
+				sliderX.updateSliderValue(rotationObj.rotationX);
+				sliderY.updateSliderValue(rotationObj.rotationY);
+				sliderZ.updateSliderValue(rotationObj.rotationZ);
+				sliderScale.updateSliderValue(rotationObj.scale);
+				sliderFV.updateSliderValue(rotationObj.fv);
+			} else {
+				rotationObj.rotationX = sliderX.value;
+				rotationObj.rotationY = sliderY.value;
+				rotationObj.rotationZ = sliderZ.value;
+				rotationObj.scale = sliderScale.value;
+				rotationObj.fv = sliderFV.value;
+			}
+			
+			videoHolder.rotationX = rotationObj.rotationX;
+			videoHolder.rotationY = rotationObj.rotationY;
+			videoHolder.rotationZ = rotationObj.rotationZ;
+			videoHolder.scaleX =videoHolder.scaleY=sliderScale.value;
 			//videoHolder.width = sliderWidth.value;
 			var pp:PerspectiveProjection=new PerspectiveProjection();
-			pp.fieldOfView=sliderFV.value;
+			pp.fieldOfView=rotationObj.fv;
 			//pp.projectionCenter=new Point(0,0);
 			videoHolder.transform.perspectiveProjection=pp;
 
@@ -298,9 +405,13 @@ return;
 				currentPhoneFrame = imageList.length - 1;
 			}
 			phoneHolder.showPhoneFrame(currentPhoneFrame);
+			phoneFrameLabel.text = "Current phone frame index " + currentPhoneFrame;
+			updateVideoPerspective();
+
 		}
 		private function start3DRotate(speed):void
 		{
+			return;
 			angle<360? angle+=speed : angle = 0;
 			if (angle < 0) angle = 180+angle;
 			if (angle > 180) angle-=180;

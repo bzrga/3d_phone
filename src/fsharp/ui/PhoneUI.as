@@ -1,13 +1,15 @@
 // ActionScript file
 package fsharp.ui {
+	import com.greensock.TweenMax;
+	
 	import flash.display.Sprite;
 	import flash.events.*;
 	
 	public class PhoneUI extends Sprite {
 		private var imageList:Array;
 		private var i:Number;
-		private const imageWidth:Number = 823;
-		private const imageHeight:Number = 427;
+		private const imageWidth:Number = 800;
+		private const imageHeight:Number = 500;
 		
 		public function PhoneUI()
 		{
@@ -36,8 +38,9 @@ package fsharp.ui {
 		public function showPhoneFrame(frameNum:Number):void {
 			for (i = 0; i < imageList.length; i++) {
 				imageList[i].visible = false;
+				imageList[i].alpha = 1;
 			}
-
+			imageList[frameNum].alpha = 1;
 			imageList[frameNum].visible = true;
 		}
 	}

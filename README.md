@@ -1,5 +1,23 @@
 3d_phone
 ========
+############################################################
+Steps to manually record the proper position of the video when rotating the phone.
+1) Rollover on the phone and drag to rotate the phone.
+2) Click on the text "click me to start rotate...."
+3) Move mouse to get x, y rotation position as close as possible.  Values in sliders would get synced as well
+4) Click again to set the position.
+5) Manually adjust slider value to get optimized position.
+6) Write down each values and current phone frame index #
+7) repeat the process for all 72 frames
+
+e.g. The value I had for frame# 4 by following the stip is below
+rotationX = 360;
+rotationY = 565;
+rotationZ = 360;
+scale = 1.05;
+fv = 1;	(field of view)
+############################################################
+
 
 3d phone with video
 
