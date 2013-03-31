@@ -5,5 +5,43 @@
    <loadermax name="videoListLoader" maxconnections="1" prependurls="">
          <videoloader width="514" height="290" videoX="388" videoY="231" name="videoID0" url="http://content.bitsontherun.com/videos/XtyoLQuV-RyDNOtym.mp4" centerregistration="true" alpha="0" autoplay="true"/> 
     </loadermax> 
-	<audio loc=""/>
+   <loadermax name="audioListLoader" load="true" maxconnections="1" prependurls="">
+         <MP3Loader name="audioFront" url="../asset/audio/F_HTC_INSTR_DEMO.mp3" autoPlay="false"/>
+         <MP3Loader name="audioBack" url="../asset/audio/F_HTC_INSTR_DEMO_LO_FI.mp3" autoPlay="false"/>
+    </loadermax> 
+    <rotations>
+    	<rotation id="0" x="0" y="0" z="0" fv="55" scale="1"/>
+    	<rotation id="1" x="0" y="5" z="0" fv="1" scale="1"/>
+    	<rotation id="2" x="0" y="18" z=".5" fv="11" scale="1"/>
+    	<rotation id="3" x="0" y="23" z=".5" fv="16" scale="1"/>
+    	<rotation id="4" x="0" y="23" z="1" fv="29" scale="1.02"/>
+    	<rotation id="5" x="0" y="23" z="1" fv="30" scale="1.02"/>
+    	<rotation id="6" x="0" y="23" z="1" fv="37" scale="1.02"/>
+    	<rotation id="7" x="0" y="29" z="1" fv="42" scale="1.02"/>
+    	<rotation id="8" x="0" y="39" z="1" fv="34" scale="1.02"/>
+    	<rotation id="9" x="0" y="50" z="2" fv="20" scale="1.02"/>
+    	<rotation id="10" x="0" y="52" z="2" fv="27" scale="1.02"/>
+    	<rotation id="11" x="0" y="63" z="2" fv="30" scale="1.02"/>
+    	<rotation id="12" x="0" y="66" z="2" fv="20" scale="1.02"/>
+    	<rotation id="13" x="0" y="73" z="3" fv="20" scale="1.02"/>
+    	<rotation id="14" x="0" y="79" z="3" fv="11" scale="1.03"/>
+    	<rotation id="15" x="0" y="85" z="3" fv="19" scale="1"/>
+    	<rotation id="16" x="0" y="90" z="3" fv="19" scale="1"/>
+    	<rotation id="54" x="175" y="622" z="182" fv="11" scale="1.09" scaleX="1.2" scaleY="1.07" px="23" py="0"/>
+    	<rotation id="55" x="173" y="612" z="182" fv="12" scale="1.09" scaleX="1.09" scaleY="1.09" px="34" py="-6"/>
+    	<rotation id="56" x="174" y="608" z="181" fv="10" scale="1.09" scaleX="1.09" scaleY="1.09" px="14" py="-6"/>
+    	<rotation id="57" x="174" y="604" z="181" fv="18" scale="1.09" scaleX="1.09" scaleY="1.09" px="14" py="-6"/>
+    	<rotation id="58" x="174" y="600" z="181" fv="10" scale="1.09" scaleX="1.09" scaleY="1.09" px="14" py="-6"/>
+    	<rotation id="59" x="174" y="595" z="181" fv="10" scale="1.09" scaleX="1.09" scaleY="1.09" px="14" py="-6"/>
+    	<rotation id="60" x="174" y="592" z="181" fv="10" scale="1.09" scaleX="1.09" scaleY="1.09" px="14" py="-6"/>
+    	<rotation id="61" x="174" y="585" z="181" fv="11" scale="1.09" scaleX="1.09" scaleY="1.09" px="14" py="-6"/>
+    	<rotation id="62" x="174" y="584" z="181" fv="10" scale="1.09" scaleX="1.09" scaleY="1.09" px="14" py="-6"/>
+    	<rotation id="63" x="174" y="580" z="181" fv="10" scale="1.09" scaleX="1.09" scaleY="1.09" px="14" py="-6"/>
+    	<rotation id="64" x="179" y="202" z="540" fv="27" scale="1.03"/>
+    	<rotation id="65" x="180" y="194" z="540" fv="41" scale="1.03"/>
+    	<rotation id="66" x="179" y="185" z="540" fv="38" scale="1.03"/>
+    	<rotation id="67" x="179" y="185" z="540" fv="38" scale="1.03"/>
+    	<rotation id="68" x="179" y="185" z="540" fv="38" scale="1.03"/>
+       	<rotation id="69" x="179" y="185" z="540" fv="16" scale="1.03"/>
+    </rotations>
 </data>

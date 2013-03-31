@@ -8,6 +8,8 @@ package
 	import com.greensock.loading.VideoLoader;
 	import com.greensock.loading.XMLLoader;
 	import com.greensock.loading.display.ContentDisplay;
+	import com.greensock.plugins.TweenPlugin;
+	import com.greensock.plugins.VolumePlugin;
 	
 	import f4.Player;
 	
@@ -15,9 +17,12 @@ package
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.events.MouseEvent;
+	import flash.events.NetStatusEvent;
 	import flash.geom.Matrix;
 	import flash.geom.PerspectiveProjection;
 	import flash.geom.Point;
+	import flash.media.SoundChannel;
+	import flash.media.SoundTransform;
 	import flash.media.Video;
 	import flash.net.NetConnection;
 	import flash.net.NetStream;
@@ -25,12 +30,14 @@ package
 	import flash.system.LoaderContext;
 	import flash.system.Security;
 	import flash.text.TextField;
+	import flash.ui.Mouse;
 	import flash.utils.*;
 	
+	import fsharp.ui.AudioControl;
 	import fsharp.ui.PhoneUI;
 	import fsharp.ui.TestSlider;
 
-	[SWF(width="800", height="500", backgroundColor="#ffffff", frameRate="30")]
+	[SWF(width="800", height="700", backgroundColor="#ffffff", frameRate="30")]
 	
 	public class VideoPhone extends Sprite
 	{
@@ -47,8 +54,11 @@ package
 		//keeps track of the VideoLoader that is currently playing
 		private var _currentVideo:VideoLoader;
 		
+		
 		private const imageWidth:Number = 800;
 		private const imageHeight:Number = 500;
+		
+		private var totalImgNum:Number;
 		private var videoWidth:Number;
 		private var videoHeight:Number;
 		
@@ -59,40 +69,57 @@ package
 		private var videoHolder:Sprite;
 		private var angle:Number = 0;
 		private var speed:Number = 5;
+		private var mainHolder:Sprite;
 		
 		private var sliderX:TestSlider;
 		private var sliderY:TestSlider;
 		private var sliderZ:TestSlider;
 		private var sliderFV:TestSlider;
 		private var sliderScale:TestSlider;
-		private var sliderWidth:TestSlider;
+		private var sliderFrame:TestSlider;
+		private var sliderPX:TestSlider;
+		private var sliderPY:TestSlider;
 		
-		private var rotationXLabel:TextField;
-		private var rotationYLabel:TextField;
+		private var sliderScaleX:TestSlider;
+		private var sliderScaleY:TestSlider;
+		
 		private var phoneFrameLabel:TextField;
 		
+		private var audioFrontLoader:MP3Loader;
+		private var audioBackLoader:MP3Loader;
+		private var currentSC:SoundChannel;
+		private var currentPan:Number = 0;
+		
+		private var playAudioBack:Boolean = false;
 		private var ns:NetStream;
+		private var videoBuffering:Boolean = true;
+		private var _rotationHint:Sprite;
+		private var _audioControl:AudioControl;
+		
 		var context1:LoaderContext = new LoaderContext();
 		var req:URLRequest = new URLRequest("http://graph.facebook.com/" + "" + "/picture?type=large");
 
 		
 		public function VideoPhone()
 		{
-			Security.loadPolicyFile("http://graph.facebook.com/crossdomain.xml");
+			//Security.loadPolicyFile("http://graph.facebook.com/crossdomain.xml");
 			Security.allowDomain("*");
 			Security.allowInsecureDomain("*");
 			
 			context1.checkPolicyFile = true;
 			
 			LoaderMax.activate([XMLLoader, ImageLoader, MP3Loader, VideoLoader]);
+			TweenPlugin.activate([VolumePlugin]);
 			
 			var loader:XMLLoader = new XMLLoader(xmlPath, {name:"configXML", onComplete:onXMLLoaded});
 			loader.load();
 		}
-		
+
 		private function onXMLLoaded(event:LoaderEvent):void {
 			var queue:LoaderMax = new LoaderMax({name:"mainQueue", onProgress:progressHandler, onComplete:onAllLoaded, onError:errorHandler});
 			
+			audioFrontLoader = LoaderMax.getLoader("audioFront");
+			audioBackLoader = LoaderMax.getLoader("audioBack");
 			configXml = LoaderMax.getContent("configXML");
 			
 			videoPath = configXml.video.@loc;
@@ -102,10 +129,10 @@ package
 			videoWidth = configXml..videoloader.@width;
 			videoHeight = configXml..videoloader.@height;
 
-			var totalImgNum:Number = Number(configXml.images.@total);
+			totalImgNum = Number(configXml.images.@total);
 			for (i = 0; i < totalImgNum; i++) {
 				//append the ImageLoader and several other loaders
-				queue.append( new ImageLoader(String(configXml.images.@loc) + (Number(configXml.images.@start) + i) + configXml.images.@type, {name:"image"+i, container:this, x:0, y:0, width:imageWidth, height:imageHeight, scaleMode:"proportionalInside", centerRegistration:false, alpha:0, noCache:false}) );
+				queue.append( new ImageLoader(String(configXml.images.@loc) + (Number(configXml.images.@start) + i) + configXml.images.@type, {name:"image"+i, container:this, centerRegistration:false, alpha:0, noCache:false}) );
 				
 			}
 			imageList = new Array(totalImgNum-1);
@@ -133,13 +160,18 @@ package
 			trace("xml failed to load");
 		}
 		private function onAllLoaded(e:LoaderEvent):void {
-
-			phoneHolder = new PhoneUI();
-			addChild(phoneHolder);
+			mainHolder = new Sprite;
+			addChild(mainHolder);
 			
+			
+			phoneHolder = new PhoneUI();
+			mainHolder.addChild(phoneHolder);
+
+			videoHolder = new Sprite;
+			mainHolder.addChild(videoHolder);
+
 			for (i = 0; i < imageList.length; i++) {
 				imageList[i] = LoaderMax.getContent("image"+i);
-				//TweenMax.to(imageList[i], 3, {alpha:.4});
 			}
 			
 			phoneHolder.init(imageList);
@@ -147,24 +179,23 @@ package
 			video = new Video();
 			video.width = videoWidth;
 			video.height = videoHeight;
-			videoHolder = new Sprite;
+			
+			
 			
 			videoHolder.addChild(video);
 			
+			
+			/***********************************/
 			var Type:Class = getDefinitionByName("container") as Class;
 			var myBox:MovieClip = new Type();
 			
 			myBox.x = videoHolder.x = videoX;
 			myBox.y = videoHolder.y = videoY;
-			//phoneHolder.addChild(videoHolder);
-			addChild(videoHolder);
+			
 			
 			addChild(myBox);
 			
-			//rotationXLabel = createCustomTextField(0, 420, 200, 20);
-			//rotationYLabel = createCustomTextField(150, 420, 200, 20);
-			
-			phoneFrameLabel = createCustomTextField(300, 420, 200, 20);
+			phoneFrameLabel = createCustomTextField(300, 520, 200, 20);
 			
 			phoneFrameLabel.text = "Current phone frame index " + currentPhoneFrame;
 			
@@ -174,31 +205,65 @@ package
 			sliderX = new TestSlider;
 			sliderX.init("Video Rotation X", 0 , 1080);
 			sliderX.x = 20;
-			sliderX.y = 420;
+			sliderX.y = 520;
 			
 			sliderY = new TestSlider;
 			sliderY.init("Video Rotation Y", 0 , 1080);
 			sliderY.x = (40 + 100)*1;
-			sliderY.y = 420;
+			sliderY.y = 520;
 
 			sliderZ = new TestSlider;
 			sliderZ.init("Video Rotation Z", 0 , 1080);
 			sliderZ.x = (40 + 100)*2;
-			sliderZ.y = 420;
+			sliderZ.y = 520;
 
 			
 			sliderFV = new TestSlider;
 			sliderFV.init("fieldOfView", 1, 179);
 			sliderFV.x = (40 + 100)*3;
-			sliderFV.y = 420;
+			sliderFV.y = 520;
 			sliderFV.updateSliderValue(55);
 			
 			sliderScale = new TestSlider;
 			sliderScale.init("Scale", 1, 1.2, .01);
 			sliderScale.x = (40 + 100)*4;
-			sliderScale.y = 420;
+			sliderScale.y = 520;
 			sliderScale.updateSliderValue(1);
+			
+			sliderFrame = new TestSlider;
+			sliderFrame.init("Frame #", 0, imageList.length);
+			sliderFrame.x = (40 + 100)*5-20;
+			sliderFrame.y = 520;
+			sliderFrame.updateSliderValue(54);
+			
+			sliderScaleX = new TestSlider;
+			sliderScaleX.init("Scale x", 1, 1.2, .01);
+			sliderScaleX.x = (40 + 100)*2;
+			sliderScaleX.y = 620;
+			sliderScaleX.updateSliderValue(1);
+			
+			sliderScaleY = new TestSlider;
+			sliderScaleY.init("Scale y", 1, 1.2, .01);
+			sliderScaleY.x = (40 + 100)*3;
+			sliderScaleY.y = 620;
+			sliderScaleY.updateSliderValue(1);
+			
+			sliderPX = new TestSlider;
+			sliderPX.init("Frame X", 0, 200);
+			sliderPX.x = (40 + 100)*4;
+			sliderPX.y = 620;
+			sliderPX.updateSliderValue(100);
+			
+			sliderPY = new TestSlider;
+			sliderPY.init("Frame y", 0, 200);
+			sliderPY.x = (40 + 100)*5-20;
+			sliderPY.y = 620;
+			sliderPY.updateSliderValue(100);
+			
+			
 			addChild(sliderScale);
+			addChild(sliderScaleX);
+			addChild(sliderScaleY);
 			
 			addChild(sliderZ);
 
@@ -206,64 +271,69 @@ package
 			addChild(sliderX);
 			
 			addChild(sliderY);
-			/**/
+			
+			
+			addChild(sliderPX);
+			
+			addChild(sliderPY);
 			
 			addChild(sliderFV);
 			
-			/*
-			sliderWidth = new TestSlider;
-			sliderWidth.init("Width", 600 , 1000);
-			sliderWidth.x = (20 + 100)*5;
-			sliderWidth.y = 420;
-			addChild(sliderWidth);
-			sliderWidth.addEventListener(TestSlider.UPDATE_VIDEO_3D, updateVideoPerspective);
-			*/
+			addChild(sliderFrame);
+			/***********************************/
+			
 			sliderX.addEventListener(TestSlider.UPDATE_VIDEO_3D, updateVideoPerspective);
 			sliderY.addEventListener(TestSlider.UPDATE_VIDEO_3D, updateVideoPerspective);
 			sliderZ.addEventListener(TestSlider.UPDATE_VIDEO_3D, updateVideoPerspective);
 			sliderFV.addEventListener(TestSlider.UPDATE_VIDEO_3D, updateVideoPerspective);
-			sliderScale.addEventListener(TestSlider.UPDATE_VIDEO_3D, updateVideoPerspective);
-			
-			//root.transform.perspectiveProjection.projectionCenter = new Point(175, 175); 
-			
-			
+			sliderScale.addEventListener(TestSlider.UPDATE_VIDEO_3D, updateVideoPerspective);			
+			sliderFrame.addEventListener(TestSlider.UPDATE_VIDEO_3D, updatePhoneFrameTest);	
+			sliderPX.addEventListener(TestSlider.UPDATE_VIDEO_3D, updateVideoPerspective);	
+			sliderPY.addEventListener(TestSlider.UPDATE_VIDEO_3D, updateVideoPerspective);
+			sliderScaleX.addEventListener(TestSlider.UPDATE_VIDEO_3D, updateVideoPerspective);
+			sliderScaleY.addEventListener(TestSlider.UPDATE_VIDEO_3D, updateVideoPerspective);
 			var nc:NetConnection = new NetConnection();
 			nc.connect(null);
 			
 			ns = new NetStream(nc);
 			ns.client = {onMetaData:ns_onMetaData, onCuePoint:ns_onCuePoint};
 			
-			video.attachNetStream(ns);
-			ns.play("http://content.bitsontherun.com/videos/XtyoLQuV-RyDNOtym.mp4");
-			//videoHolder.transform.perspectiveProjection.fieldOfView=55;
-
+			ns.addEventListener(NetStatusEvent.NET_STATUS,netStatusHandler);
 			
+			
+			video.attachNetStream(ns);
+			ns.play("http://content.bitsontherun.com/videos/XtyoLQuV-RyDNOtym.mp4");			
 			
 			phoneHolder.initHitArea();
+		
+			mainHolder.addEventListener(MouseEvent.MOUSE_OVER, showHint);
+			mainHolder.addEventListener(MouseEvent.MOUSE_DOWN, onPhoneOver);
+			mainHolder.addEventListener(MouseEvent.MOUSE_OUT, onPhoneOut);
+			mainHolder.addEventListener(MouseEvent.MOUSE_UP, onPhoneOut);
 			
-			phoneHolder.addEventListener(MouseEvent.MOUSE_DOWN, onPhoneOver);
-			phoneHolder.addEventListener(MouseEvent.MOUSE_OUT, onPhoneOut);
-			phoneHolder.addEventListener(MouseEvent.MOUSE_UP, onPhoneOut);
-			return;
-			/*
-			var player = new Player();
-			var skin = new videoSkin();
-			skin.initialization(player, 300, 200, "http://content.bitsontherun.com/videos/XtyoLQuV-RyDNOtym.mp4","", true);
-			phoneHolder.addChild(skin);
-return;
-			var movie:Video = player.Movie(300,200);
-			player.Play("http://content.bitsontherun.com/videos/XtyoLQuV-RyDNOtym.mp4");
+			var symbolClass:Class;
 			
-			return;
-			//get the LoaderMax named "videoListLoaded" which was inside our XML
-			var queue:LoaderMax = LoaderMax.getLoader("videoListLoader");
-			
-			//start loading the queue of VideoLoaders (they will load in sequence)
-			queue.load();
-			
-			//show the first video
-			showVideo(queue.getChildren()[0]);
-			*/
+			symbolClass=getDefinitionByName("rotationHint") as Class;
+			_rotationHint=new symbolClass();
+			addChild(_rotationHint);
+			_rotationHint.visible = false;
+
+			_audioControl = new AudioControl;
+			addChild(_audioControl);
+			_audioControl.y = 600;
+			_audioControl.x = 60;
+			_audioControl.addEventListener(MouseEvent.CLICK, onAudioClick);
+		}
+		private function onAudioClick(e:MouseEvent) : void {
+			var _soundTransform = new SoundTransform();
+
+			if (_audioControl.mute) {
+				
+				_soundTransform.volume = 0;	
+			} else {
+				_soundTransform.volume = .5;	
+			}
+			currentSC.soundTransform = _soundTransform;
 		}
 		
 		private function createCustomTextField(x:Number, y:Number, width:Number, height:Number):TextField {
@@ -273,68 +343,210 @@ return;
 			addChild(result);
 			return result;
 		}
+		
 		private var rotateFlag = false;
+
 		private function startRotate(e:MouseEvent) : void {
 			trace("startRotate=" + rotateFlag);
 			if (rotateFlag) {
 				e.target.removeEventListener(MouseEvent.MOUSE_MOVE, moveMouseRotation);
-				e.target.removeEventListener(MouseEvent.MOUSE_WHEEL, mouseWheelRotation);
-				ns.pause();
+				//ns.resume();
 			} else {
 				e.target.addEventListener(MouseEvent.MOUSE_MOVE, moveMouseRotation);
-				e.target.addEventListener(MouseEvent.MOUSE_WHEEL, mouseWheelRotation);
 				ns.pause();
 			}
 			rotateFlag = !rotateFlag;
 		}
+		
 		private function moveMouseRotation(e:MouseEvent) : void {
 			videoHolder.rotationX= stage.mouseY;
 			videoHolder.rotationY= stage.mouseX;
-			/*rotationXLabel.text = "rotationX " + videoHolder.rotationX; 
-				rotationYLabel.text ="rotationY " + videoHolder.rotationY;
-			*/	
 				sliderX.updateSliderValue(videoHolder.rotationX);
 				sliderY.updateSliderValue(videoHolder.rotationY);
+		}		
+		
+		private function updatePhoneFrameTest(e:Event=null) : void {
+			currentPhoneFrame = sliderFrame.value;
+			phoneHolder.showPhoneFrame(currentPhoneFrame);
+			phoneFrameLabel.text = "Current phone frame index " + currentPhoneFrame;
+			updateVideoPerspective();
 		}
-		
-		private function mouseWheelRotation(e:MouseEvent) {
-			//videoHolder.rotationY= stage.mouseX;
-		}
-		
-		
 		private function updateVideoPerspective(e:Event=null) : void {
 			var rotationObj = {};
 			
-			if (currentPhoneFrame == 4 && e == null) {
+			var audioFrontLeftFrame = 53;
+			var audioFrontRightFrame = 17;
+
+			var audioBackRightFrame = 35;
+			
+			var audioPopLeftFrame = 24;
+			var audioPopRightFrame = 45;
+			
+			var rotationData:XML;
+			if (configXml..rotation.(@id == currentPhoneFrame).length()) {
+				rotationData = configXml..rotation.(@id == currentPhoneFrame)[0];
+			}
+			
+			if (e == null && rotationData) {
+			//if (currentPhoneFrame == 4 && e == null) {
 				rotationObj.rotationX = 360;
 				rotationObj.rotationY = 565;
 				rotationObj.rotationZ = 360;
 				rotationObj.scale = 1.05;
 				rotationObj.fv = 1;	
+
+				rotationObj.rotationX = rotationData.@x;
+				rotationObj.rotationY = rotationData.@y;
+				rotationObj.rotationZ = rotationData.@z;
+				rotationObj.scale = rotationData.@scale;
+				rotationObj.fv = rotationData.@fv;	
 				
+				if (rotationData.@px) {
+					rotationObj.px = videoX + Number(rotationData.@px);
+					rotationObj.py = videoY + Number(rotationData.@py);
+					trace("rotationObj.@px=" + rotationData.@px);
+					trace("rotationObj.px=" + rotationObj.px);
+					
+					sliderPX.updateSliderValue(100 + Number(rotationData.@px));
+					sliderPY.updateSliderValue(100 + Number(rotationData.@py));
+				}
+				if (rotationData.@scaleX) {
+					rotationObj.scaleX = rotationData.@scaleX;
+					rotationObj.scaleY = rotationData.@scaleY;
+				} else {
+					rotationObj.scaleX = rotationData.@scale;
+					rotationObj.scaleY = rotationData.@scale;
+				}
 				sliderX.updateSliderValue(rotationObj.rotationX);
 				sliderY.updateSliderValue(rotationObj.rotationY);
 				sliderZ.updateSliderValue(rotationObj.rotationZ);
 				sliderScale.updateSliderValue(rotationObj.scale);
 				sliderFV.updateSliderValue(rotationObj.fv);
 			} else {
+				
+				rotationObj.rotationX = 0;
+				rotationObj.rotationY = 0;
+				rotationObj.rotationZ = 0;
+				rotationObj.scale = 1;
+				rotationObj.fv = 55;
+				
+				rotationObj.scaleX = 1;
+				rotationObj.scaleY = 1;
+				
+				rotationObj.px = videoX;
+				rotationObj.py = videoY;
+				
 				rotationObj.rotationX = sliderX.value;
 				rotationObj.rotationY = sliderY.value;
 				rotationObj.rotationZ = sliderZ.value;
 				rotationObj.scale = sliderScale.value;
 				rotationObj.fv = sliderFV.value;
+				
+				rotationObj.scaleX = sliderScaleX.value;
+				rotationObj.scaleY = sliderScaleY.value;
+				
+				rotationObj.px = videoX + sliderPX.value-100;
+				rotationObj.py = videoY + sliderPY.value-100;
 			}
 			
-			videoHolder.rotationX = rotationObj.rotationX;
-			videoHolder.rotationY = rotationObj.rotationY;
-			videoHolder.rotationZ = rotationObj.rotationZ;
-			videoHolder.scaleX =videoHolder.scaleY=sliderScale.value;
-			//videoHolder.width = sliderWidth.value;
+			var tweenTime = .2;
 			var pp:PerspectiveProjection=new PerspectiveProjection();
-			pp.fieldOfView=rotationObj.fv;
-			//pp.projectionCenter=new Point(0,0);
-			videoHolder.transform.perspectiveProjection=pp;
+			TweenMax.killTweensOf(videoHolder);
+			//adjust video position
+			if (((currentPhoneFrame >= audioFrontRightFrame && currentPhoneFrame <= audioPopLeftFrame) || (currentPhoneFrame >= audioPopRightFrame && currentPhoneFrame <= audioFrontLeftFrame))) {
+				if (videoHolder.scaleX != .4 && phoneHolder.imagesHolder.scaleX == 1) {
+					videoHolder.alpha = 0;
+				}
+				videoHolder.rotationX = videoHolder.rotationY  = videoHolder.rotationZ = 0;
+				videoHolder.transform.perspectiveProjection=pp;
+				//reveal 20%
+				TweenMax.to(videoHolder, tweenTime, {y:videoY-230, alpha:1, scaleX:.4,scaleY:.4});
+				TweenMax.to(phoneHolder.imagesHolder, tweenTime, {y:0, scaleX:1,scaleY:1});
+				
+			} else if (currentPhoneFrame > audioPopLeftFrame && currentPhoneFrame < audioPopRightFrame) {
+				videoHolder.alpha = 1;
+				videoHolder.rotationX = videoHolder.rotationY  = videoHolder.rotationZ = 0;
+				videoHolder.transform.perspectiveProjection=pp;
+				
+				//video reveal 100%, phone shrinks
+				TweenMax.to(videoHolder, tweenTime, {y:videoY-130, scaleX:1,scaleY:1});
+				//TweenMax.to(videoHolder, tweenTime, {y:videoY-130});
+				TweenMax.to(phoneHolder.imagesHolder, tweenTime, {y:140, scaleX:.5,scaleY:.5});
+				
+			} else {
+				//TweenMax.to(videoHolder, tweenTime, {y:videoY, scaleX:1,scaleY:1});
+				videoHolder.alpha = 1;
+				TweenMax.to(videoHolder, 0, {y:videoY});
+				TweenMax.to(phoneHolder.imagesHolder, tweenTime, {y:0, scaleX:1,scaleY:1});
+				
+				videoHolder.rotationX = rotationObj.rotationX;
+				videoHolder.rotationY = rotationObj.rotationY;
+				videoHolder.rotationZ = rotationObj.rotationZ;
+				//videoHolder.scaleX =videoHolder.scaleY=rotationObj.value;
+				
+				videoHolder.scaleX = rotationData.@scale;
+				videoHolder.scaleY = rotationData.@scale;
+				if (rotationObj.px) {
+					videoHolder.x = rotationObj.px;
+					videoHolder.y = rotationObj.py;
+					//videoHolder.scaleX = rotationObj.scaleX;
+					//videoHolder.scaleY=rotationObj.scaleY;
+					
+					trace("videoHolder.px=" + rotationObj.px);
+				} else {
+					videoHolder.x = videoX;
+					videoHolder.y = videoY;
+				}
+				pp.fieldOfView=rotationObj.fv;
+				videoHolder.transform.perspectiveProjection=pp;
+			}
+			
+			
+			//adjust audio chanel
+			if (currentPhoneFrame <= audioFrontRightFrame) {
+				currentPan = 1 * ((currentPhoneFrame)/audioFrontRightFrame);
+				//increase right sound
+				if (playAudioBack) {
+					playAudioBack = false;
+					if (!videoBuffering) playAudio(true);
+				}
+			} else if (currentPhoneFrame >= audioFrontLeftFrame) {
+				currentPan = -1 * ((totalImgNum -currentPhoneFrame)/(totalImgNum-audioFrontLeftFrame))
+				//increase left sound
+				if (playAudioBack) {
+					playAudioBack = false;
+					if (!videoBuffering) playAudio(true);
+				}
+			} else {
+				//play alt back sound
+				if (currentPhoneFrame < audioBackRightFrame) {
+					//right pan
+					currentPan = 1 * (1-(currentPhoneFrame-audioFrontRightFrame)/(35-audioFrontRightFrame));
+				} else {
+					//left pan
+					currentPan = -1 * ((currentPhoneFrame)/(audioFrontLeftFrame));
+				}
+				if (!playAudioBack) {
+					playAudioBack = true;
+					if (!videoBuffering) playAudio(true);
+				}
+			}
+			
+			updatePanning();
+			
 
+
+		}
+		
+		private function updatePanning():void {
+			if (currentSC) {
+				if (currentPan == 1) currentPan = .95;
+				if (currentPan == -1) currentPan = -.95;
+				trace("current pan = " + currentPan);
+				var _soundTransform = new SoundTransform();
+				_soundTransform.pan = currentPan;
+				currentSC.soundTransform = _soundTransform;
+			}
 		}
 		private function showVideo(video:VideoLoader):void {
 			
@@ -358,12 +570,6 @@ return;
 		
 		private function ns_onMetaData(item:Object):void {
 			trace("metaData");
-			// Resize video instance.
-			//video.width = item.width;
-			//video.height = item.height;
-			// Center video instance on Stage.
-			//video.x = (stage.stageWidth - video.width) / 2;
-			//video.y = (stage.stageHeight - video.height) / 2;
 			video.x = -video.width/2;
 			video.y = -video.height/2;
 		}
@@ -373,12 +579,72 @@ return;
 			trace(item.name + "\t" + item.time);
 		}
 		
+		private function netStatusHandler(event:NetStatusEvent):void {
+			switch (event.info.code) {
+				case "NetStream.Buffer.Empty":
+					//Pause audio
+					playAudio(false);
+					videoBuffering = true;
+					break;
+				case "NetStream.Buffer.Full":
+					//Play audio
+					playAudio();
+					videoBuffering = false;
+					break;
+			}
+		}
+		
+		private function playAudio(_play:Boolean = true):void {
+			var soundTime:Number = Math.max(audioFrontLoader.soundTime, audioBackLoader.soundTime);
+			trace("soundTime="+soundTime);
+			trace("_play="+_play);
+			
+			if (_play) {
+				if (playAudioBack) {
+					audioFrontLoader.pauseSound();
+					audioBackLoader.gotoSoundTime(soundTime, true);
+					currentSC = audioBackLoader.channel;
+				} else {
+					audioFrontLoader.gotoSoundTime(soundTime, true);
+					audioBackLoader.pauseSound();
+					currentSC = audioFrontLoader.channel;
+				}
+			} else {
+				//audioFrontLoader.pauseSound();
+				//audioBackLoader.pauseSound();
+			}
+			
+			updatePanning();
+		}
+				
 		private function onPhoneOver(e:MouseEvent):void {
 			trace("onPhoneOver");
+			//_rotationHint.x = mouseX;
+			//_rotationHint.y = mouseY;
+			addEventListener(Event.ENTER_FRAME, updateHint);	
 			phoneHolder.addEventListener(MouseEvent.MOUSE_MOVE, onPhoneMove);			
 		}
+		
+		private function updateHint(e:Event):void {
+			trace("onPhoneOver");
+			_rotationHint.x = mouseX;
+			_rotationHint.y = mouseY;
+		}
+		
+		
+		private function showHint(e:MouseEvent):void {
+			trace("onPhoneOver");
+			_rotationHint.x = mouseX;
+			_rotationHint.y = mouseY;
+			_rotationHint.visible = true;
+			Mouse.cursor="hand";
+		}
+		
+		
 		private function onPhoneOut(e:MouseEvent):void {
 			trace("onPhoneOut");
+			_rotationHint.visible = false;
+			Mouse.cursor="auto";
 			phoneHolder.removeEventListener(MouseEvent.MOUSE_MOVE, onPhoneMove);
 		}
 		private function onPhoneMove(e:MouseEvent):void {

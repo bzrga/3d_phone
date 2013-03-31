@@ -1,0 +1,2 @@
+﻿package fsharp.ui {		import flash.display.MovieClip;	import flash.events.MouseEvent;
+			public class AudioControl extends MovieClip {				public var mute:Boolean = false;				public function AudioControl() {			// constructor code			buttonMode = true;			addEventListener(MouseEvent.CLICK, onAudioClick);		}		private function onAudioClick(e:MouseEvent) : void {			mute = !mute;		}	}	}
