@@ -6,8 +6,8 @@
          <videoloader width="514" height="290" videoX="388" videoY="231" name="videoID0" url="http://content.bitsontherun.com/videos/XtyoLQuV-RyDNOtym.mp4" centerregistration="true" alpha="0" autoplay="true"/> 
     </loadermax> 
    <loadermax name="audioListLoader" load="true" maxconnections="1" prependurls="">
-         <MP3Loader name="audioFront" url="../asset/audio/F_HTC_INSTR_DEMO.mp3" autoPlay="false"/>
-         <MP3Loader name="audioBack" url="../asset/audio/F_HTC_INSTR_DEMO_LO_FI.mp3" autoPlay="false"/>
+         <MP3Loader name="audioFront" url="http://d2gi7ultltnc2u.cloudfront.net/htc/F_HTC_ABLETON_HIFI.mp3" autoPlay="false"/>
+         <MP3Loader name="audioBack" url="http://d2gi7ultltnc2u.cloudfront.net/htc/F_HTC_ABLETON_LOFI.mp3" autoPlay="false"/>
     </loadermax> 
     <rotations>
     	<rotation id="0" x="0" y="0" z="0" fv="55" scale="1"/>
